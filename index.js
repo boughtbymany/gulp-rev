@@ -115,6 +115,7 @@ var plugin = function () {
 	});
 };
 
+
 plugin.manifest = function (pth, opts) {
 	if (typeof pth === 'string') {
 		pth = {path: pth};
@@ -122,11 +123,7 @@ plugin.manifest = function (pth, opts) {
 
 	opts = objectAssign({
 		path: 'rev-manifest.json',
-		merge: false,
-		// Apply the default JSON transformer.
-		// The user can pass in his on transformer if he wants. The only requirement is that it should
-		// support 'parse' and 'stringify' methods.
-		transformer: JSON
+		merge: false
 	}, opts, pth);
 
 	var manifest = {};
@@ -138,8 +135,8 @@ plugin.manifest = function (pth, opts) {
 			return;
 		}
 
-		var revisionedFile = relPath(file.base, file.path);
-		var originalFile = path.join(path.dirname(revisionedFile), path.basename(file.revOrigPath)).replace(/\\/g, '/');
+		var revisionedFile = opts.prefixValue + relPath(file.base, file.path);
+		var originalFile = opts.prefixKey + path.join( path.dirname(revisionedFile), path.basename(file.revOrigPath)).replace(/\\/g, '/');
 
 		manifest[originalFile] = revisionedFile;
 
@@ -161,17 +158,18 @@ plugin.manifest = function (pth, opts) {
 				var oldManifest = {};
 
 				try {
-					oldManifest = opts.transformer.parse(manifestFile.contents.toString());
+					oldManifest = JSON.parse(manifestFile.contents.toString());
 				} catch (err) {}
 
 				manifest = objectAssign(oldManifest, manifest);
 			}
 
-			manifestFile.contents = new Buffer(opts.transformer.stringify(sortKeys(manifest), null, '  '));
+			manifestFile.contents = new Buffer(JSON.stringify(sortKeys(manifest), null, '  '));
 			this.push(manifestFile);
 			cb();
 		}.bind(this));
 	});
 };
+
 
 module.exports = plugin;
